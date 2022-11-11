@@ -65,8 +65,14 @@ if(LD_LIBRARY_PATH)
 endif()
 
 set (INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/sdformat-${SDF_VERSION}/sdf")
-set (LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} CACHE STRING "Installation directory for libraries (relative to CMAKE_INSTALL_PREFIX)")
-set (BIN_INSTALL_DIR ${CMAKE_INSTALL_BINDIR} CACHE STRING "Installation directory for binaries (relative to CMAKE_INSTALL_PREFIX)")
+set (LIB_INSTALL_DIR "" CACHE STRING "Installation directory for libraries (relative to CMAKE_INSTALL_PREFIX)")
+set (BIN_INSTALL_DIR "" CACHE STRING "Installation directory for binaries (relative to CMAKE_INSTALL_PREFIX)")
+if (NOT LIB_INSTALL_DIR STREQUAL "")
+  set(CMAKE_INSTALL_LIBDIR "${LIB_INSTALL_DIR}")
+endif()
+if (NOT BIN_INSTALL_DIR STREQUAL "")
+  set(CMAKE_INSTALL_BINDIR "${BIN_INSTALL_DIR}")
+endif()
 
 set (USE_FULL_RPATH OFF CACHE BOOL "Set to true to enable full rpath")
 
@@ -79,16 +85,16 @@ if (USE_FULL_RPATH)
   # (but later on when installing)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
-  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
 
   # add the automatically determined parts of the RPATH
   # which point to directories outside the build tree to the install RPATH
   set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
   # the RPATH to be used when installing, but only if its not a system directory
-  list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}" isSystemDir)
+  list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_FULL_LIBDIR}" isSystemDir)
   if("${isSystemDir}" STREQUAL "-1")
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
   endif("${isSystemDir}" STREQUAL "-1")
 endif()
 
@@ -262,10 +268,14 @@ else (buid_errors)
 
   ########################################
   # Make the package config file
+  string(REPLACE "${CMAKE_INSTALL_PREFIX}" "\${prefix}"
+    SDFORMAT_PKG_CONFIG_LIBDIR "${CMAKE_INSTALL_FULL_LIBDIR}")
+  string(REPLACE "${CMAKE_INSTALL_PREFIX}" "\${prefix}"
+    SDFORMAT_PKG_CONFIG_INCLUDEDIR "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
   configure_file(${CMAKE_SOURCE_DIR}/cmake/sdformat_pc.in
     ${CMAKE_CURRENT_BINARY_DIR}/cmake/sdformat.pc @ONLY)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/sdformat.pc DESTINATION
-    ${LIB_INSTALL_DIR}/pkgconfig COMPONENT pkgconfig)
+    ${CMAKE_INSTALL_LIBDIR}/pkgconfig COMPONENT pkgconfig)
 
   ########################################
   # Configure documentation uploader
@@ -292,7 +302,7 @@ else (buid_errors)
             ${CMAKE_CURRENT_BINARY_DIR}/SDFormatConfig.cmake
             ${CMAKE_CURRENT_BINARY_DIR}/${cmake_conf_version_file}
           DESTINATION
-	    ${LIB_INSTALL_DIR}/cmake/${PROJECT_NAME_LOWER}/
+	    ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME_LOWER}/
 	  COMPONENT cmake)
 
   ########################################
